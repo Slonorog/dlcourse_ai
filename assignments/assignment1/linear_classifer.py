@@ -1,61 +1,90 @@
 import numpy as np
 
 
+# predictions - Z
 def softmax(predictions):
     '''
     Computes probabilities from scores
-
     Arguments:
-      predictions, np array, shape is either (N) or (batch_size, N) -
-        classifier output
-
+      predictions, np array, shape is either (N) or (batch_size, N) - classifier output
     Returns:
-      probs, np array of the same shape as predictions - 
-        probability for every class, 0..1
+      probs, np array of the same shape as predictions - probability for every class, 0..1
     '''
-    # TODO implement softmax
-    # Your final implementation shouldn't have any loops
-    raise Exception("Not implemented!")
+
+    single = (predictions.ndim == 1)
+
+    if single:
+        predictions = predictions.reshape(1, predictions.shape[0])
+
+    maximums = np.amax(predictions, axis=1).reshape(predictions.shape[0], 1)
+    predictions_ts = predictions - maximums
+
+    predictions_exp = np.exp(predictions_ts)
+    sums = np.sum(predictions_exp, axis=1).reshape(predictions_exp.shape[0], 1)
+    result = predictions_exp / sums
+
+    if single:
+        result = result.reshape(result.size)
+
+    return result   # S
 
 
+# probs - S
+# target_index - y
 def cross_entropy_loss(probs, target_index):
     '''
     Computes cross-entropy loss
-
     Arguments:
-      probs, np array, shape is either (N) or (batch_size, N) -
-        probabilities for every class
-      target_index: np array of int, shape is (1) or (batch_size) -
-        index of the true class for given sample(s)
-
+      probs, np array, shape is either (N) or (batch_size, N) - probabilities for every class
+      target_index: np array of int, shape is (1) or (batch_size) - index of the true class for given sample(s)
     Returns:
       loss: single value
     '''
-    # TODO implement cross-entropy
-    # Your final implementation shouldn't have any loops
-    raise Exception("Not implemented!")
+
+    single = (probs.ndim == 1)
+
+    if single:
+        probs = probs.reshape(1, probs.shape[0])
+        target_index = np.array([target_index])
+
+    rows = np.arange(target_index.shape[0])
+    cols = target_index
+
+    return np.mean(-np.log(probs[rows, cols]))  # L
 
 
+# predictions - Z
+# target_index - y
 def softmax_with_cross_entropy(predictions, target_index):
     '''
-    Computes softmax and cross-entropy loss for model predictions,
-    including the gradient
-
+    Computes softmax and cross-entropy loss for model predictions, including the gradient
     Arguments:
-      predictions, np array, shape is either (N) or (batch_size, N) -
-        classifier output
-      target_index: np array of int, shape is (1) or (batch_size) -
-        index of the true class for given sample(s)
-
+      predictions, np array, shape is either (N) or (batch_size, N) - classifier output
+      target_index: np array of int, shape is (1) or (batch_size) - index of the true class for given sample(s)
     Returns:
       loss, single value - cross-entropy loss
       dprediction, np array same shape as predictions - gradient of predictions by loss value
     '''
-    # TODO implement softmax with cross-entropy
-    # Your final implementation shouldn't have any loops
-    raise Exception("Not implemented!")
 
-    return loss, dprediction
+    single = (predictions.ndim == 1)
+
+    #print(single)
+    if single:
+        predictions = predictions.reshape(1, predictions.shape[0])
+        target_index = np.array([target_index])
+
+    probs = softmax(predictions)                    # S
+    loss = cross_entropy_loss(probs, target_index)  # L
+
+    indicator = np.zeros(probs.shape)
+    indicator[np.arange(probs.shape[0]), target_index] = 1      # 1(y)
+    dprediction = (probs - indicator) / predictions.shape[0]    # dL/dZ = (S - 1(y)) / N
+
+    if single:
+        dprediction = dprediction.reshape(dprediction.size)
+
+    return loss, dprediction    # L, dL/dZ
+
 
 
 def l2_regularization(W, reg_strength):
